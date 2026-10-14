@@ -12,7 +12,6 @@ import { TouchControls } from "./TouchControls";
 import { useUI } from "./state";
 import { loading, meshed, setLoading, subscribeLoading } from "./loading";
 import { chunkKey } from "./world";
-import { CityAmenities } from "./CityAmenities";
 import { nearKiosk } from "./kiosk";
 
 const RADIUS = isTouchDevice() ? 3 : 4;
@@ -823,7 +822,7 @@ function Clouds() {
     const out: { x: number; y: number; z: number; s: number; sy: number }[] = [];
     let r = 12345;
     const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
-    for (let c = 0; c < 34; c++) {
+    for (let c = 0; c < 90; c++) {
       const cx = rnd() * CLOUD_TILE, cz = rnd() * CLOUD_TILE, cy = CLOUD_DECK - 6 + rnd() * 8;
       const n = 6 + Math.floor(rnd() * 6), w = 10 + rnd() * 14;
       for (let i = 0; i < n; i++) {
