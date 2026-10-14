@@ -12,7 +12,6 @@ import { TouchControls } from "./TouchControls";
 import { useUI } from "./state";
 import { loading, meshed, setLoading, subscribeLoading } from "./loading";
 import { chunkKey } from "./world";
-import { CityAmenities } from "./CityAmenities";
 import { nearKiosk } from "./kiosk";
 
 const RADIUS = isTouchDevice() ? 3 : 4;
@@ -22,6 +21,8 @@ const MOON_COL = new THREE.Color("#b4ceff");
 const MOON_AMB = new THREE.Color("#3a5580");
 const DAY_LENGTH = 480; // seconds per full day
 const REACH = 5;
+const CLOUD_DECK = 36; // soft cloud sea under the city's lowest foundations
+const VOID_Y = 4; // below this you are lost in the clouds -> back to the landing pad
 
 const budget = { t: -1, n: 0 };
 function takeBudget(t: number) {
@@ -575,7 +576,8 @@ function Player({ zt }: { zt: React.MutableRefObject<ZombieTarget> }) {
       if (dist > 3.5) damage(Math.floor(dist - 3), clock.current);
       fallStart.current = null;
     }
-    if (g.pos.y < -20) damage(100, clock.current);
+    // cloud-deck void: falling below the city returns you to the landing pad
+    if (g.pos.y < VOID_Y) { g.pos.copy(g.spawn); g.vel.set(0, 0, 0); fallStart.current = null; }
 
     // regen
     if (!ui.dead && ui.health < MAX_HEALTH && clock.current - g.lastHurt > 5) {
@@ -693,7 +695,6 @@ function Scene() {
   return (
     <>
       <Sky />
-      <CityAmenities />
       <Clouds />
       <Chunks material={material} />
       <Player zt={zt} />
@@ -821,11 +822,11 @@ function Clouds() {
     const out: { x: number; y: number; z: number; s: number; sy: number }[] = [];
     let r = 12345;
     const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
-    for (let c = 0; c < 34; c++) {
-      const cx = rnd() * CLOUD_TILE, cz = rnd() * CLOUD_TILE, cy = 82 + rnd() * 14;
+    for (let c = 0; c < 90; c++) {
+      const cx = rnd() * CLOUD_TILE, cz = rnd() * CLOUD_TILE, cy = CLOUD_DECK - 6 + rnd() * 8;
       const n = 6 + Math.floor(rnd() * 6), w = 10 + rnd() * 14;
       for (let i = 0; i < n; i++) {
-        const s = 5 + rnd() * 7;
+        const s = 9 + rnd() * 10;
         out.push({ x: cx + (rnd() - 0.5) * w * 2, y: cy + rnd() * 4 + (i < 2 ? 3 : 0), z: cz + (rnd() - 0.5) * w, s, sy: s * (0.55 + rnd() * 0.25) });
       }
     }
@@ -833,6 +834,7 @@ function Clouds() {
   }, []);
   const mat = useMemo(() => new THREE.MeshLambertMaterial({ color: "#ffffff", emissive: "#9aa7b8", emissiveIntensity: 0.55, fog: false }), []);
   const geo = useMemo(() => new THREE.IcosahedronGeometry(1, 2), []);
+  const deck = useRef<THREE.Mesh>(null);
   const m4 = useMemo(() => new THREE.Matrix4(), []);
   useFrame(() => {
     if (!ref.current) return;
@@ -847,8 +849,16 @@ function Clouds() {
       ref.current!.setMatrixAt(i, m4);
     });
     ref.current.instanceMatrix.needsUpdate = true;
+    deck.current?.position.set(cx, CLOUD_DECK - 7, cz);
   });
-  return <instancedMesh ref={ref} args={[geo, mat, puffs.length]} frustumCulled={false} />;
+  return (
+    <>
+      <instancedMesh ref={ref} args={[geo, mat, puffs.length]} frustumCulled={false} />
+      <mesh ref={deck} rotation-x={-Math.PI / 2} material={mat} frustumCulled={false}>
+        <planeGeometry args={[4000, 4000]} />
+      </mesh>
+    </>
+  );
 }
 
 // Tracks viewport size; when the screen is portrait the game is rendered
