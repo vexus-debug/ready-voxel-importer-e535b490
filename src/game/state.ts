@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import * as THREE from "three";
 import { B, isPassable } from "./blocks";
 import { World, type Edits } from "./world";
-import { LF_CX, LF_CZ, LF_GROUND, onLinefieldReady, lfFindStreet } from "./linefield";
+import { SPAWN_X, SPAWN_Y, SPAWN_Z, onLinefieldReady, lfFindStreet } from "./linefield";
 
 const SAVE_KEY = "voxelcraft-save-v1";
 export const MAX_HEALTH = 20;
@@ -81,9 +81,10 @@ export function getGame(): Game {
   } catch {
     saved = null;
   }
+  if (saved && saved.lf !== 2) saved = null; // saves from the old procedural world don't fit Utopia
   const seed = saved?.seed ?? Math.floor(Math.random() * 1e9);
   const world = new World(seed, (saved?.edits as Edits) ?? {});
-  const spawn = new THREE.Vector3(LF_CX + 0.5, LF_GROUND + 1.5, LF_CZ + 0.5);
+  const spawn = new THREE.Vector3(SPAWN_X + 0.5, SPAWN_Y + 0.5, SPAWN_Z + 0.5);
   let pos = saved?.pos && saved?.lf ? new THREE.Vector3(...saved.pos) : spawn.clone();
   // never resume inside water or terrain
   const here = world.get(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z)) ?? 0;
@@ -120,7 +121,7 @@ export function saveGame() {
         counts: ui.counts,
         time: ui.time,
         selected: ui.selected,
-        lf: 1,
+        lf: 2,
       }),
     );
     ui.lastSaved = Date.now();

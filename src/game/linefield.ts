@@ -1,17 +1,17 @@
 // @ts-nocheck
-// Linefield cyberpunk downtown, imported 1:1 from the Minecraft map (512x512 core, 378 layers).
+// Utopia above the sky megacity, imported 1:1 from the Minecraft map (640x640, y 0..255, world coords == MC coords).
 // Stored as 64 gzip tiles (64x64 columns each) of per-column runs: [u16 runCount][(u8 id, u8 len)...] bottom-up.
 // Tiles stream in on demand when nearby chunks generate; world.ts restamps chunks once a tile arrives.
 // Must not import values from world.ts at module scope (world.ts imports this module).
 // Tiles are bundled as static files in public/linefield/lf_X_Z.bin.
 
-export const LF_SIZE = 512;
+export const LF_SIZE = 640;
 export const LF_TS = 64; // tile size in columns
-export const LF_YN = 378; // stored layers
-export const LF_BASE = 17; // world y of the lowest stored layer
-export const LF_GROUND = LF_BASE + 5; // street level
-export const LF_X0 = 38 - 256; // world min corner (north of the kingdom)
-export const LF_Z0 = -1000;
+export const LF_YN = 256; // stored layers
+export const LF_BASE = 0; // world y of the lowest stored layer
+export const LF_GROUND = 118; // sky-dock / central plaza level
+export const LF_X0 = -304; // world min corner == Minecraft coords
+export const LF_Z0 = -304;
 export const LF_CX = LF_X0 + LF_SIZE / 2, LF_CZ = LF_Z0 + LF_SIZE / 2;
 
 interface Tile { data: Uint8Array; off: Uint32Array }
@@ -30,7 +30,7 @@ let started = false;
 /** One request for the whole city: gzip(header of 64 x [u32 offset, u32 length], tile bodies). */
 async function loadAll() {
   try {
-    const res = await fetch(`/linefield/linefield_all.bin`);
+    const res = await fetch(`/linefield/utopia_all.bin`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const total = +(res.headers.get("content-length") || 0);
     let buf: Uint8Array;
@@ -104,20 +104,19 @@ function colTop(u: number, v: number) {
   lfColumn(u, v, (y) => { if (y > top) top = y; });
   return top;
 }
-/** Nearest open street spot to the city centre: a 5x5 patch at street level with open sky above. */
+export const SPAWN_X = -166, SPAWN_Y = 118, SPAWN_Z = 172;
+/** Nearest standable spot (solid floor + 2 air) to the Minecraft spawn, preferring y close to SPAWN_Y. */
 export function lfFindStreet(): [number, number, number] | null {
-  const c = LF_SIZE / 2, R = 2, M = R + 2;
-  for (let r = 0; r < LF_SIZE / 2 - M; r++)
+  for (let r = 0; r < 24; r++)
     for (let dz = -r; dz <= r; dz++)
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-        const u = c + dx, v = c + dz;
-        if (u < M || v < M || u >= LF_SIZE - M || v >= LF_SIZE - M) continue;
-        const g = colTop(u, v);
-        if (g < LF_GROUND - 2 || g > LF_GROUND + 1) continue;
-        let ok = true;
-        for (let z = -R; z <= R && ok; z++) for (let x = -R; x <= R && ok; x++) if (colTop(u + x, v + z) !== g) ok = false;
-        if (ok) return [LF_X0 + u, g + 1, LF_Z0 + v];
+        const u = SPAWN_X + dx - LF_X0, v = SPAWN_Z + dz - LF_Z0;
+        const col = new Uint8Array(LF_YN + 3);
+        lfColumn(u, v, (y, id) => { if (y < col.length) col[y] = id; });
+        for (let d = 0; d < 40; d++)
+          for (const y of [SPAWN_Y - 1 - d, SPAWN_Y - 1 + d])
+            if (y > 0 && col[y] && !col[y + 1] && !col[y + 2]) return [LF_X0 + u, y + 1, LF_Z0 + v];
       }
   return null;
 }

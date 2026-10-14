@@ -575,7 +575,8 @@ function Player({ zt }: { zt: React.MutableRefObject<ZombieTarget> }) {
       if (dist > 3.5) damage(Math.floor(dist - 3), clock.current);
       fallStart.current = null;
     }
-    if (g.pos.y < -20) damage(100, clock.current);
+    // cloud-deck void: falling below the city returns you to the landing pad
+    if (g.pos.y < VOID_Y) { g.pos.copy(g.spawn); g.vel.set(0, 0, 0); fallStart.current = null; }
 
     // regen
     if (!ui.dead && ui.health < MAX_HEALTH && clock.current - g.lastHurt > 5) {
@@ -693,7 +694,6 @@ function Scene() {
   return (
     <>
       <Sky />
-      <CityAmenities />
       <Clouds />
       <Chunks material={material} />
       <Player zt={zt} />
@@ -822,10 +822,10 @@ function Clouds() {
     let r = 12345;
     const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
     for (let c = 0; c < 34; c++) {
-      const cx = rnd() * CLOUD_TILE, cz = rnd() * CLOUD_TILE, cy = 82 + rnd() * 14;
+      const cx = rnd() * CLOUD_TILE, cz = rnd() * CLOUD_TILE, cy = CLOUD_DECK - 6 + rnd() * 8;
       const n = 6 + Math.floor(rnd() * 6), w = 10 + rnd() * 14;
       for (let i = 0; i < n; i++) {
-        const s = 5 + rnd() * 7;
+        const s = 9 + rnd() * 10;
         out.push({ x: cx + (rnd() - 0.5) * w * 2, y: cy + rnd() * 4 + (i < 2 ? 3 : 0), z: cz + (rnd() - 0.5) * w, s, sy: s * (0.55 + rnd() * 0.25) });
       }
     }

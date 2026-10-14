@@ -78,10 +78,9 @@ export class World {
       for (let lx = 0; lx < CH; lx++) {
         const u = x0 + lx - LF_X0, v = z0 + lz - LF_Z0;
         if (u < 0 || v < 0 || u >= LF_SIZE || v >= LF_SIZE) continue;
-        c[idx(lx, 0, lz)] = B.BEDROCK;
-        for (let y = 1; y < H; y++) c[idx(lx, y, lz)] = y < LF_GROUND - 4 ? B.CONCRETE : 0;
-        const ok = lfColumn(u, v, (y, id) => { if (y < H) c[idx(lx, y, lz)] = remapId(id); });
-        if (!ok) for (let y = LF_GROUND - 4; y <= LF_GROUND; y++) c[idx(lx, y, lz)] = B.PANEL_DARK; // placeholder street until the tile streams in
+        // sky city over a cloud void: no ground, no water
+        for (let y = 0; y < H; y++) c[idx(lx, y, lz)] = 0;
+        lfColumn(u, v, (y, id) => { if (y < H) c[idx(lx, y, lz)] = remapId(id); });
       }
   }
 
@@ -523,7 +522,7 @@ export class World {
   }
 
   get(x: number, y: number, z: number) {
-    if (y < 0) return B.BEDROCK;
+    if (y < 0) return 0;
     if (y >= H) return 0;
     const cx = Math.floor(x / CH), cz = Math.floor(z / CH);
     return this.getChunk(cx, cz)[idx(x - cx * CH, y, z - cz * CH)];
