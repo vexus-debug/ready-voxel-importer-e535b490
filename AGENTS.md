@@ -15,3 +15,4 @@
 
 - The modern metropolis lives in src/game/city.ts (grid built once, stamped per chunk like town.ts) far east of the kingdom; it must not import values from world.ts at module scope because world.ts imports it (circular init).
 - City prop collision lives in src/game/propCollide.ts (spatial hash fed by amenities.ts) and is checked from world.ts collides(); it must not import world.ts, to avoid circular init.
+- The whole world is the imported Utopia Minecraft map: streamed from public/linefield/utopia_all.bin via linefield.ts (per-column RLE tiles, world coords == MC coords); regenerate it with a converter, not by hand, since it is generated binary data. Space below the city is an empty cloud void, and falling below VOID_Y in Game.tsx teleports the player back to spawn.
