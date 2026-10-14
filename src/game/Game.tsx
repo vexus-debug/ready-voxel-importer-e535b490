@@ -22,6 +22,8 @@ const MOON_COL = new THREE.Color("#b4ceff");
 const MOON_AMB = new THREE.Color("#3a5580");
 const DAY_LENGTH = 480; // seconds per full day
 const REACH = 5;
+const CLOUD_DECK = 36; // soft cloud sea under the city's lowest foundations
+const VOID_Y = 4; // below this you are lost in the clouds -> back to the landing pad
 
 const budget = { t: -1, n: 0 };
 function takeBudget(t: number) {
@@ -833,6 +835,7 @@ function Clouds() {
   }, []);
   const mat = useMemo(() => new THREE.MeshLambertMaterial({ color: "#ffffff", emissive: "#9aa7b8", emissiveIntensity: 0.55, fog: false }), []);
   const geo = useMemo(() => new THREE.IcosahedronGeometry(1, 2), []);
+  const deck = useRef<THREE.Mesh>(null);
   const m4 = useMemo(() => new THREE.Matrix4(), []);
   useFrame(() => {
     if (!ref.current) return;
@@ -847,8 +850,16 @@ function Clouds() {
       ref.current!.setMatrixAt(i, m4);
     });
     ref.current.instanceMatrix.needsUpdate = true;
+    deck.current?.position.set(cx, CLOUD_DECK - 7, cz);
   });
-  return <instancedMesh ref={ref} args={[geo, mat, puffs.length]} frustumCulled={false} />;
+  return (
+    <>
+      <instancedMesh ref={ref} args={[geo, mat, puffs.length]} frustumCulled={false} />
+      <mesh ref={deck} rotation-x={-Math.PI / 2} material={mat} frustumCulled={false}>
+        <planeGeometry args={[4000, 4000]} />
+      </mesh>
+    </>
+  );
 }
 
 // Tracks viewport size; when the screen is portrait the game is rendered
