@@ -22,7 +22,7 @@ function Architecture() {
   const mat = useMemo(() => makeArchMaterial(cloudU.cloudDay), []);
   const group = useRef<THREE.Group>(null);
   const st = useRef({ ready: false, done: new Set<string>() });
-  useEffect(() => onLinefieldReady(() => { st.current.ready = true; }), []);
+  useEffect(() => { onLinefieldReady(() => { st.current.ready = true; }); }, []);
   useFrame(() => {
     const s = st.current;
     if (!s.ready || !group.current || s.done.size >= ARCH_TILES * ARCH_TILES) return;
