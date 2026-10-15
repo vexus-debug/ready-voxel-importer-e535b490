@@ -192,16 +192,17 @@ export function buildArchTile(tx: number, tz: number): THREE.BufferGeometry | nu
 }
 
 /** Architectural surface material: smooth PBR body, glazing with mullions + lit windows, brushed metal, emissive trims. */
-export function makeArchMaterial(uTime: { value: number }, uNight: { value: number }) {
+export function makeArchMaterial(uDay: { value: number }) {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.15, side: THREE.DoubleSide });
   m.onBeforeCompile = (s) => {
-    s.uniforms.uTime = uTime; s.uniforms.uNight = uNight;
+    s.uniforms.uDay = uDay;
     s.vertexShader = s.vertexShader
       .replace("#include <common>", "#include <common>\nattribute float cls; varying float vCls; varying vec3 vW; varying vec3 vN;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvCls = cls; vW = (modelMatrix * vec4(position,1.0)).xyz; vN = normal;");
     s.fragmentShader = s.fragmentShader
       .replace("#include <common>", `#include <common>
-uniform float uTime, uNight; varying float vCls; varying vec3 vW; varying vec3 vN;
+uniform float uDay;
+#define uNight (1.0 - uDay) varying float vCls; varying vec3 vW; varying vec3 vN;
 float h21(vec2 p){ return fract(sin(dot(p, vec2(41.3,289.1)))*43758.5); }`)
       .replace("#include <color_fragment>", `#include <color_fragment>
 float cls = floor(vCls + 0.5);
