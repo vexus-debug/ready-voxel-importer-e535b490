@@ -178,8 +178,8 @@ export function buildArchTile(tx: number, tz: number): THREE.BufferGeometry | nu
             }
           }
           const id = pickId(i, j, ya);
-          for (let k = 2; k + 3 < poly.length + 0 && k / 2 + 1 < poly.length / 2; k += 2) {
-            const a = [poly[0], poly[1]], b = [poly[k], poly[k + 1]], c = [poly[k + 2], poly[k + 3]];
+          for (let k = 1, n = poly.length / 2; k < n - 1; k++) {
+            const a = [poly[0], poly[1]], b = [poly[2 * k], poly[2 * k + 1]], c = [poly[2 * k + 2], poly[2 * k + 3]];
             if (up) { out.v(wx(a[0]), y, wz(a[1]), 0, ny, 0, id); out.v(wx(c[0]), y, wz(c[1]), 0, ny, 0, id); out.v(wx(b[0]), y, wz(b[1]), 0, ny, 0, id); }
             else { out.v(wx(a[0]), y, wz(a[1]), 0, ny, 0, id); out.v(wx(b[0]), y, wz(b[1]), 0, ny, 0, id); out.v(wx(c[0]), y, wz(c[1]), 0, ny, 0, id); }
           }
@@ -193,7 +193,7 @@ export function buildArchTile(tx: number, tz: number): THREE.BufferGeometry | nu
 
 /** Architectural surface material: smooth PBR body, glazing with mullions + lit windows, brushed metal, emissive trims. */
 export function makeArchMaterial(uTime: { value: number }, uNight: { value: number }) {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.15, side: THREE.FrontSide });
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.15, side: THREE.DoubleSide });
   m.onBeforeCompile = (s) => {
     s.uniforms.uTime = uTime; s.uniforms.uNight = uNight;
     s.vertexShader = s.vertexShader
