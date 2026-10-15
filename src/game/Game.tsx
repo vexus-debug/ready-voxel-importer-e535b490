@@ -639,7 +639,7 @@ function Player({ zt }: { zt: React.MutableRefObject<ZombieTarget> }) {
 
   return (
     <lineSegments ref={highlight} geometry={edges}>
-      <lineBasicMaterial color="#111111" />
+      <lineBasicMaterial color="#7fe8ff" transparent opacity={0.25} />
     </lineSegments>
   );
 }
@@ -723,8 +723,14 @@ const CITY_GLSL = `
 uniform sampler2D cityMap; uniform vec3 citySky; uniform float uCityTime; varying vec3 vCM;
 float cLine(float t, float w){ float d = abs(fract(t) - 0.5); float aa = fwidth(t) * 1.2; return 1.0 - smoothstep(0.5 - w - aa, 0.5 - w, d); }
 `;
+// City surfaces ignore the pixel atlas: each material takes only its tile's average colour
+// (smallest mip = one texel per tile), so no block-sized texture pattern ever shows.
 const CITY_MAP = `#include <map_fragment>
-if (vCM.x > 0.5) diffuseColor = vec4(diffuse, opacity) * texture2D(cityMap, vMapUv);`;
+if (vCM.x > 0.5) {
+  vec2 tc = (floor(vMapUv * 8.0) + 0.5) / 8.0;
+  vec3 base = textureLod(cityMap, tc, 7.0).rgb;
+  diffuseColor = vec4(diffuse * mix(base, vec3(dot(base, vec3(0.33))), 0.25), opacity);
+}`;
 const CITY_SURF = `
 if (vCM.x > 0.5) {
   float cls = floor(vCM.x + 0.5);
@@ -734,7 +740,10 @@ if (vCM.x > 0.5) {
   vec3 R = reflect(-Vv, Nn);
   float horizon = clamp(R.y * 0.5 + 0.5, 0.0, 1.0);
   vec3 env = mix(citySky * 0.35, citySky * 1.15, horizon);
-  vec2 fu = vCM.yz;
+  // architectural-scale panel coords in world space (3 x 4 m panels), never per voxel
+  vec3 WN = normalize(cross(dFdx(vCW), dFdy(vCW)));
+  float hz = abs(WN.x) > abs(WN.z) ? vCW.z : vCW.x;
+  vec2 fu = abs(WN.y) > 0.6 ? fract(vCW.xz / vec2(4.0, 4.0)) : fract(vec2(hz / 3.0, vCW.y / 4.0));
   float grain = cN(vCW.xz * 3.1 + vCW.y * 1.7);
   if (cls > 5.5) { // hardlight energy barrier: translucent-looking field, scanlines, glowing edges
     vec3 hueB = mix(vec3(0.15, 0.95, 1.0), vec3(1.0, 0.25, 0.85), step(0.85, cH(floor(vCW.xz / 16.0))));
