@@ -13,6 +13,35 @@ import { useUI } from "./state";
 import { loading, meshed, setLoading, subscribeLoading } from "./loading";
 import { chunkKey } from "./world";
 import { nearKiosk } from "./kiosk";
+import { buildArchTile, makeArchMaterial, ARCH_TILES } from "./architecture";
+import { onLinefieldReady, LF_TS, LF_X0, LF_Z0 } from "./linefield";
+
+/** Modelled city: smooth architecture tiles built nearest-first, one per frame, once the map is in. */
+function Architecture() {
+  const { camera } = useThree();
+  const mat = useMemo(() => makeArchMaterial(cloudU.cloudDay), []);
+  const group = useRef<THREE.Group>(null);
+  const st = useRef({ ready: false, done: new Set<string>() });
+  useEffect(() => onLinefieldReady(() => { st.current.ready = true; }), []);
+  useFrame(() => {
+    const s = st.current;
+    if (!s.ready || !group.current || s.done.size >= ARCH_TILES * ARCH_TILES) return;
+    let best: [number, number] | null = null, bd = Infinity;
+    for (let tz = 0; tz < ARCH_TILES; tz++) for (let tx = 0; tx < ARCH_TILES; tx++) {
+      if (s.done.has(tx + "_" + tz)) continue;
+      const d = Math.hypot(LF_X0 + (tx + 0.5) * LF_TS - camera.position.x, LF_Z0 + (tz + 0.5) * LF_TS - camera.position.z);
+      if (d < bd) { bd = d; best = [tx, tz]; }
+    }
+    if (!best) return;
+    s.done.add(best[0] + "_" + best[1]);
+    const geo = buildArchTile(best[0], best[1]);
+    if (!geo) return;
+    const m = new THREE.Mesh(geo, mat);
+    m.castShadow = true; m.receiveShadow = true;
+    group.current.add(m);
+  });
+  return <group ref={group} />;
+}
 
 const RADIUS = isTouchDevice() ? 3 : 4;
 const SHADOW_RES = isTouchDevice() ? 1024 : 2048;
@@ -47,7 +76,7 @@ function ChunkMesh({ cx, cz, world, material }: { cx: number; cz: number; world:
     old.dispose();
   });
   useEffect(() => () => { meshed.delete(chunkKey(cx, cz)); ref.current?.geometry.dispose(); }, []);
-  return <mesh ref={ref} material={material} castShadow receiveShadow />;
+  return <mesh ref={ref} material={material} visible={false} />;
 }
 
 /** Flips loading.ready once the city bundle is in and the 3x3 chunks around spawn are meshed. */
@@ -697,6 +726,7 @@ function Scene() {
       <Sky />
       <Clouds />
       <Chunks material={material} />
+      <Architecture />
       <Player zt={zt} />
     </>
   );
