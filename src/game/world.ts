@@ -652,10 +652,10 @@ function cityOffset(world: World, X: number, Y: number, Z: number, out: number[]
         cnt++; sx += dx + 0.5; sy += dy + 0.5; sz += dz + 0.5;
       }
   if (cnt === 0 || cnt === 8 || cnt === 4) return;
-  const k = ((4 - cnt) / 4) / cnt * 1.3;
+  const k = ((4 - cnt) / 4) / cnt * 1.55;
   out[0] = sx * k; out[2] = sz * k;
-  // beveled rooflines/sills: small vertical chamfer on exposed top/bottom edges
-  if (cnt <= 2) out[1] = sy * 0.22;
+  // rounded rooflines/sills: vertical bevel on exposed top/bottom edges
+  if (cnt <= 2) out[1] = sy * 0.34;
 }
 
 /** Feature-preserving normals for Linefield faces: average with coincident vertices whose
